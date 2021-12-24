@@ -16,36 +16,9 @@ type ServerConfig struct {
 }
 
 type ClientConfig struct {
-	Prysm struct {
-		Scheme string
-		Host   string
-		Port   string
-	}
-	Lighthouse struct {
-		Scheme string
-		Host   string
-		Port   string
-	}
-	Teku struct {
-		Scheme string
-		Host   string
-		Port   string
-	}
-	Nimbus struct {
-		Scheme string
-		Host   string
-		Port   string
-	}
-	Geth struct {
-		Scheme string
-		Host   string
-		Port   string
-	}
-	Erigon struct {
-		Scheme string
-		Host   string
-		Port   string
-	}
+	Scheme string
+	Host   string
+	Port   string
 }
 
 func NewConfig() (*Config, error) {

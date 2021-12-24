@@ -2,31 +2,6 @@ server:
   bindAddr: "127.0.0.1:3000"
 
 client:
-  prysm:
     scheme: "http"
     host: "127.0.0.1"
     port: "8080"
-  lighthouse:
-    scheme: "http"
-    host: "127.0.0.1"
-    port: "5052"
-  teku:
-    scheme: "http"
-    host: "127.0.0.1"
-    port: "5051"
-  nimbus:
-    scheme: "http"
-    host: "127.0.0.1"
-    port: "5052"
-  geth:
-    scheme: "http"
-    host: "127.0.0.1"
-    port: "8545"
-  erigon:
-    scheme: "http"
-    host: "127.0.0.1"
-    port: "8545"
-  openethereum:
-    scheme: "http"
-    host: "127.0.0.1"
-    port: "8545"

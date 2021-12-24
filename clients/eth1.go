@@ -15,18 +15,13 @@ type eth1Client struct {
 	client *resty.Client
 }
 
-func NewEth1Client(ethClient string) *eth1Client {
+func NewEth1Client() *eth1Client {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 	var addr string
-	switch ethClient {
-	case "geth":
-		addr = cfg.Client.Geth.Scheme + "://" + cfg.Client.Geth.Host + ":" + cfg.Client.Geth.Port
-	case "erigon":
-		addr = cfg.Client.Erigon.Scheme + "://" + cfg.Client.Erigon.Host + ":" + cfg.Client.Erigon.Port
-	}
+	addr = cfg.Client.Scheme + "://" + cfg.Client.Host + ":" + cfg.Client.Port
 
 	client := resty.New()
 	return &eth1Client{

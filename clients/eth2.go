@@ -15,23 +15,14 @@ type eth2Client struct {
 	client *resty.Client
 }
 
-func NewEth2Client(ethClient string) *eth2Client {
+func NewEth2Client() *eth2Client {
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var addr string
-	switch ethClient {
-	case "prysm":
-		addr = cfg.Client.Prysm.Scheme + "://" + cfg.Client.Prysm.Host + ":" + cfg.Client.Prysm.Port
-	case "lighthouse":
-		addr = cfg.Client.Lighthouse.Scheme + "://" + cfg.Client.Lighthouse.Host + ":" + cfg.Client.Lighthouse.Port
-	case "teku":
-		addr = cfg.Client.Teku.Scheme + "://" + cfg.Client.Teku.Host + ":" + cfg.Client.Teku.Port
-	case "nimbus":
-		addr = cfg.Client.Nimbus.Scheme + "://" + cfg.Client.Nimbus.Host + ":" + cfg.Client.Nimbus.Port
-	}
+	addr = cfg.Client.Scheme + "://" + cfg.Client.Host + ":" + cfg.Client.Port
 
 	client := resty.New()
 	return &eth2Client{
