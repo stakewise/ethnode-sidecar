@@ -1,4 +1,4 @@
-module github.com/stakewise/operator-sidecar
+module github.com/stakewise/ethnode-sidecar
 
 go 1.17
 

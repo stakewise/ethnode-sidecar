@@ -1,4 +1,4 @@
-BINARY_NAME=opertor-sidecar
+BINARY_NAME=sidecar
 
 build:
 	GOARCH=amd64 GOOS=darwin go build -o ${BINARY_NAME}-darwin main.go

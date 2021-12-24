@@ -19,7 +19,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            europe-west4-docker.pkg.dev/stakewiselabs/public/operator-sidecar
+            europe-west4-docker.pkg.dev/stakewiselabs/public/ethnode-sidecar
           tags: |
             type=ref,event=branch
             type=ref,event=tag

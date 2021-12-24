@@ -3,7 +3,7 @@ package clients
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/stakewise/operator-sidecar/config"
+	"github.com/stakewise/ethnode-sidecar/config"
 	"log"
 	"net/http"
 	"strconv"

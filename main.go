@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/stakewise/operator-sidecar/clients"
-	"github.com/stakewise/operator-sidecar/config"
+	"github.com/stakewise/ethnode-sidecar/clients"
+	"github.com/stakewise/ethnode-sidecar/config"
 	"log"
 	"net/http"
 	"time"
