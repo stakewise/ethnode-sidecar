@@ -1,9 +1,10 @@
 FROM golang:1.17-alpine as build
 WORKDIR /app
 COPY . .
-RUN go mod tidy && GOOS=linux go build -o sidecar main.go
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o sidecar main.go
 
 FROM scratch
+USER 1000
 WORKDIR /app
 COPY --from=build /app/config.yml .
 COPY --from=build /app/sidecar .
