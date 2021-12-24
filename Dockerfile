@@ -1,7 +1,7 @@
 FROM golang:1.17-alpine as build
 WORKDIR /app
 COPY . .
-RUN go mod tidy && GOARCH=amd64 GOOS=linux go build -o sidecar main.go
+RUN go mod tidy && GOOS=linux go build -o sidecar main.go
 
 FROM scratch
 WORKDIR /app
