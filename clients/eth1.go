@@ -34,73 +34,50 @@ func NewEth1Client() *eth1Client {
 // HealthCheck Returns OK if the node is fully
 // synchronized and ready to receive traffic
 func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	var currentBlock = struct {
-		Jsonrpc string `json:"jsonrpc"`
-		ID      int    `json:"id"`
-		Result  string `json:"result"`
-	}{}
-
-	var highestBlock = struct {
-		Jsonrpc string `json:"jsonrpc"`
-		ID      int    `json:"id"`
-		Result  struct {
-			BaseFeePerGas    string        `json:"baseFeePerGas"`
-			Difficulty       string        `json:"difficulty"`
-			ExtraData        string        `json:"extraData"`
-			GasLimit         string        `json:"gasLimit"`
-			GasUsed          string        `json:"gasUsed"`
-			Hash             string        `json:"hash"`
-			LogsBloom        string        `json:"logsBloom"`
-			Miner            string        `json:"miner"`
-			MixHash          string        `json:"mixHash"`
-			Nonce            string        `json:"nonce"`
-			Number           string        `json:"number"`
-			ParentHash       string        `json:"parentHash"`
-			ReceiptsRoot     string        `json:"receiptsRoot"`
-			Sha3Uncles       string        `json:"sha3Uncles"`
-			Size             string        `json:"size"`
-			StateRoot        string        `json:"stateRoot"`
-			Timestamp        string        `json:"timestamp"`
-			TotalDifficulty  string        `json:"totalDifficulty"`
-			Transactions     []string      `json:"transactions"`
-			TransactionsRoot string        `json:"transactionsRoot"`
-			Uncles           []interface{} `json:"uncles"`
-		} `json:"result"`
+	var ethSyncing = struct {
+		Jsonrpc string      `json:"jsonrpc"`
+		ID      int         `json:"id"`
+		Result  interface{} `json:"result"`
 	}{}
 
 	_, err := e.client.R().
 		SetHeader("Content-Type", "application/json").
-		SetBody(`{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}`).
-		SetResult(&currentBlock).
+		SetBody(`{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}`).
+		SetResult(&ethSyncing).
 		Post(e.addr)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "Error: "+err.Error())
 	}
 
-	_, err = e.client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(`{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest", false],"id":1}`).
-		SetResult(&highestBlock).
-		Post(e.addr)
-	if err != nil {
+	switch ethSyncing.Result.(type) {
+	default:
 		w.WriteHeader(http.StatusInternalServerError)
+	case bool:
+		ethSyncingResult := ethSyncing.Result
+		if ethSyncingResult == false {
+			fmt.Fprintf(w, "StatusOK. ETH1 node is healthy.")
+		}
+	case map[string]interface{}:
+		ethSyncingResult := ethSyncing.Result.(map[string]interface{})
+		if hBlock, ok := ethSyncingResult["highestBlock"]; ok {
+			highestBlock, err := hexutil.DecodeUint64(fmt.Sprintf("%s", hBlock))
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			currentBlock, err := hexutil.DecodeUint64(fmt.Sprintf("%s", ethSyncingResult["currentBlock"]))
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+
+			if highestBlock-currentBlock > 50 {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				fmt.Fprintf(w, "StatusOK. ETH1 node is healthy.")
+			}
+		} else {
+			fmt.Fprintf(w, "StatusOK. ETH1 node is healthy.")
+		}
 	}
 
-	currentBlockDecoded, err := hexutil.DecodeUint64(currentBlock.Result)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	highestBlockDecoded, err := hexutil.DecodeUint64(highestBlock.Result.Number)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	if highestBlockDecoded-currentBlockDecoded > 50 || highestBlockDecoded == 0 {
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		fmt.Fprintf(w, "%s %s", currentBlockDecoded, highestBlockDecoded)
-		fmt.Fprintf(w, "StatusOK. ETH1 node is healthy.")
-	}
 }
