@@ -3,5 +3,5 @@ server:
 
 client:
     scheme: "http"
-    host: "65.108.120.57"
+    host: "127.0.0.1"
     port: "8545"
