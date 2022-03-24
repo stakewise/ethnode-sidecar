@@ -2,11 +2,12 @@ package clients
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/stakewise/ethnode-sidecar/common/hexutil"
 	"github.com/stakewise/ethnode-sidecar/config"
-	"log"
-	"net/http"
 )
 
 type eth1Client struct {
@@ -34,11 +35,13 @@ func NewEth1Client() *eth1Client {
 // HealthCheck Returns OK if the node is fully
 // synchronized and ready to receive traffic
 func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	var ethSyncing = struct {
+	type response struct {
 		Jsonrpc string      `json:"jsonrpc"`
 		ID      int         `json:"id"`
 		Result  interface{} `json:"result"`
-	}{}
+	}
+
+	var ethSyncing, ethPeersConnected response
 
 	_, err := e.client.R().
 		SetHeader("Content-Type", "application/json").
@@ -46,8 +49,31 @@ func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		SetResult(&ethSyncing).
 		Post(e.addr)
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = e.client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(`{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}`).
+		SetResult(&ethPeersConnected).
+		Post(e.addr)
+	if err != nil {
+		fmt.Println(err)
 		fmt.Fprintf(w, "Error: "+err.Error())
+		return
+	}
+
+	peers, err := hexutil.DecodeUint64(fmt.Sprintf("%s", ethPeersConnected.Result))
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if peers < 3 {
+		fmt.Println("Number of connected peers less than 3...NODE NOT READY")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	switch ethSyncing.Result.(type) {
@@ -63,15 +89,21 @@ func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		if hBlock, ok := ethSyncingResult["highestBlock"]; ok {
 			highestBlock, err := hexutil.DecodeUint64(fmt.Sprintf("%s", hBlock))
 			if err != nil {
+				fmt.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 			currentBlock, err := hexutil.DecodeUint64(fmt.Sprintf("%s", ethSyncingResult["currentBlock"]))
 			if err != nil {
+				fmt.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 
 			if highestBlock-currentBlock > 50 {
+				fmt.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			} else {
 				fmt.Fprintf(w, "StatusOK. ETH1 node is healthy.")
 			}
