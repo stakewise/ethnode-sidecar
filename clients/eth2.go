@@ -2,11 +2,12 @@ package clients
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/stakewise/ethnode-sidecar/config"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/stakewise/ethnode-sidecar/config"
 )
 
 type eth2Client struct {
@@ -53,10 +54,14 @@ func (e *eth2Client) Readiness(w http.ResponseWriter, r *http.Request) {
 		SetError(&dataError).
 		Get(e.addr + "/eth/v1/node/syncing")
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	if data.Data.IsSyncing {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	} else {
 		fmt.Fprintf(w, "StatusOK. Beacon node is synced.")
 	}
@@ -90,13 +95,17 @@ func (e *eth2Client) Liveness(w http.ResponseWriter, r *http.Request) {
 		SetHeader("Content-Type", "application/json").
 		Get(e.addr + "/eth/v1/node/health")
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	syncDistance, _ := strconv.Atoi(data.Data.SyncDistance)
 	if resp.StatusCode() == http.StatusOK && syncDistance < 50 {
 		fmt.Fprintf(w, "StatusOK. Beacon node is healthy.")
 	} else {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }

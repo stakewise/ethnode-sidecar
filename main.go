@@ -1,12 +1,14 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/stakewise/ethnode-sidecar/clients"
-	"github.com/stakewise/ethnode-sidecar/config"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/stakewise/ethnode-sidecar/clients"
+	"github.com/stakewise/ethnode-sidecar/config"
 )
 
 func main() {
@@ -16,6 +18,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
+	router.Use(loggingMiddleware)
 	eth1 := clients.NewEth1Client()
 	eth2 := clients.NewEth2Client()
 	router.HandleFunc("/eth1/readiness", eth1.HealthCheck).Methods(http.MethodGet)
@@ -29,5 +32,17 @@ func main() {
 		WriteTimeout: 5 * time.Second,
 		ReadTimeout:  5 * time.Second,
 	}
+	fmt.Println("Starting server:", cfg.Server.BindAddr)
 	log.Fatal(srv.ListenAndServe())
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf(
+			"%s %s",
+			r.Method,
+			r.RequestURI,
+		)
+		next.ServeHTTP(w, r)
+	})
 }
