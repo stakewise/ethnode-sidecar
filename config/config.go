@@ -16,9 +16,11 @@ type ServerConfig struct {
 }
 
 type ClientConfig struct {
-	Scheme string
-	Host   string
-	Port   string
+	Scheme            string
+	Host              string
+	Port              string
+	AuthorizationType string
+	JWTSecret         string
 }
 
 func NewConfig() (*Config, error) {
