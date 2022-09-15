@@ -11,9 +11,11 @@ import (
 )
 
 type eth1Client struct {
-	cfg    *config.Config
-	addr   string
-	client *resty.Client
+	cfg               *config.Config
+	addr              string
+	client            *resty.Client
+	authorizationType AuthorizationMethod
+	jwtSecret         string
 }
 
 func NewEth1Client() *eth1Client {
@@ -26,9 +28,11 @@ func NewEth1Client() *eth1Client {
 
 	client := resty.New()
 	return &eth1Client{
-		cfg:    cfg,
-		addr:   addr,
-		client: client,
+		cfg:               cfg,
+		addr:              addr,
+		client:            client,
+		authorizationType: AuthorizationMethod(cfg.Client.AuthorizationType),
+		jwtSecret:         cfg.Client.JWTSecret,
 	}
 }
 
@@ -42,9 +46,21 @@ func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var ethSyncing, ethPeersConnected response
+	authorizationHeaders := map[string]string{}
+
+	if e.authorizationType == Bearer {
+		token, err := CreateJWTAuthToken(e.jwtSecret)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		authorizationHeaders["Authorization"] = fmt.Sprintf("Bearer %s", token)
+	}
 
 	_, err := e.client.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeaders(authorizationHeaders).
 		SetBody(`{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}`).
 		SetResult(&ethSyncing).
 		Post(e.addr)
@@ -55,6 +71,7 @@ func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = e.client.R().
 		SetHeader("Content-Type", "application/json").
+		SetHeaders(authorizationHeaders).
 		SetBody(`{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":74}`).
 		SetResult(&ethPeersConnected).
 		Post(e.addr)
@@ -101,7 +118,7 @@ func (e *eth1Client) HealthCheck(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if highestBlock-currentBlock > 50 {
-				fmt.Println(err)
+				fmt.Println(fmt.Sprintf("highestBlock-currentBlock < 50, highestBlock: %d, currentBlock: %d", highestBlock, currentBlock))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			} else {
