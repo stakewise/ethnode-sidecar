@@ -5,3 +5,5 @@ client:
     scheme: "http"
     host: "127.0.0.1"
     port: "8545"
+    authorizationType: "bearer"
+    jwtSecret: "8cfef42fca94276aa2425cdb1a162c9ee003d8468040fc9c478b524561155254"
