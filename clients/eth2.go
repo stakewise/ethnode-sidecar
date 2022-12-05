@@ -81,10 +81,27 @@ func (e *eth2Client) Liveness(w http.ResponseWriter, r *http.Request) {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	}{}
+	var dataCheckpointSync = struct {
+		Data struct {
+			BackFillSyncing struct {
+				Completed int `json:"completed"`
+				Remaining int `json:"remaining"`
+			} `json:"BackFillSyncing"`
+		} `json:"data"`
+	}{}
 
 	_, err := e.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetResult(&data).
+		SetError(&dataError).
+		Get(e.addr + "/eth/v1/node/syncing")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	_, err = e.client.R().
+		SetHeader("Content-Type", "application/json").
+		SetResult(&dataCheckpointSync).
 		SetError(&dataError).
 		Get(e.addr + "/eth/v1/node/syncing")
 	if err != nil {
@@ -100,12 +117,22 @@ func (e *eth2Client) Liveness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	syncDistance, _ := strconv.Atoi(data.Data.SyncDistance)
-	if resp.StatusCode() == http.StatusOK && syncDistance < 50 {
-		fmt.Fprintf(w, "StatusOK. Beacon node is healthy.")
+	if dataCheckpointSync.Data.BackFillSyncing.Remaining != 0 {
+		if dataCheckpointSync.Data.BackFillSyncing.Remaining-dataCheckpointSync.Data.BackFillSyncing.Completed < 50 {
+			fmt.Fprintf(w, "StatusOK. Beacon node is healthy.")
+		} else {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	} else {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		syncDistance, _ := strconv.Atoi(data.Data.SyncDistance)
+		if resp.StatusCode() == http.StatusOK && syncDistance < 50 {
+			fmt.Fprintf(w, "StatusOK. Beacon node is healthy.")
+		} else {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 }
